@@ -1,0 +1,7 @@
+S aASb
+S d
+A Ac
+A c
+
+acdb
+acdc
