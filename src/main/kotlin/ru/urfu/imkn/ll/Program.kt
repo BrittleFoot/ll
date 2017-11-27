@@ -9,33 +9,70 @@ class Relation(val eq: Boolean, val lt: Boolean, val gt: Boolean) {
 
     val size = +lt + +gt + +eq
     val ge = gt and eq
+    val le = lt and eq
     override fun toString() = ((lt `@` "<") + (gt `@` ">") + (eq `@` "=")) ifEmptyThen "."
 }
 
 class PrecursorTable(private val grammar: LLGrammar) {
     private val equalities = grammar.rules.flatMap { it.value }.flatMap { it.asIterable().bigrams() }.toSet()
     // FIXIT
-    private val first = grammar.rules.mapValues { it.value.map { it.first() }.toSet() }
-    private val last = grammar.rules.mapValues { it.value.map { it.last() }.toSet() }
+    private val first = grammar.rules.mapValues {
+        deep(grammar, it.key) { it.first() }
+    }
+    private val last = grammar.rules.mapValues {
+        deep(grammar, it.key) { it.last() }
+    }
 
-    private val ltList = grammar.items.map { it as Symbol<String> to mutableSetOf<Symbol<String>>() }
+    private fun deep(grammar: LLGrammar, sym: GrammarToken<String>, selector: (Rule) -> GrammarToken<String>)
+            : Set<GrammarToken<String>> {
+
+        if (sym !is NonTerminal) return setOf(sym)
+
+        var firstGen = gen(grammar, sym, selector).toSet()
+
+        while (true) {
+
+            val nextGen = firstGen.flatMap {
+                when (it) {
+                    is Terminal -> listOf(it)
+                    is NonTerminal -> gen(grammar, sym, selector)
+                }
+            }.toSet()
+
+            if (nextGen == firstGen)
+                break
+            firstGen = nextGen
+        }
+        return firstGen
+
+    }
+
+    private fun gen(grammar: LLGrammar, sym: NonTerminal, selector: (Rule) -> GrammarToken<String>)
+            = grammar.rules.getOrDefault(sym, listOf()).map(selector)
+
+
+    private val ltList = grammar.items
+            .map { it as Symbol<String> to mutableSetOf<Symbol<String>>() }
             .toMap().toMutableMap().also {
         equalities.forEach { pair -> it[pair.first]!!.addAll(first(pair.second)) }
         it[StartOfLine()] = mutableSetOf<Symbol<String>>().also { it.addAll(first(grammar.axiom)) }
     }
 
-    private val gtList =
-            grammar.items.map { it as Symbol<String> to mutableSetOf<Symbol<String>>() }
-                    .toMap().toMutableMap().also { gtList ->
-                equalities.filter { (_, z2) -> z2 is Terminal }.forEach { (z1, z2) ->
-                    last(z1).forEach { zEnding ->
-                        gtList.getOrPut(zEnding) { mutableSetOf() }.apply { add(z2); addAll(first(z2)) }
-                    }
-                }
-                grammar[grammar.axiom]?.map { it.last() }?.let {
-                    gtList.getOrPut(EndOfLine()) { mutableSetOf() }.addAll(it)
-                }
+    private val gtList = grammar.items
+            .map { it as Symbol<String> to mutableSetOf<Symbol<String>>() }
+            .toMap().toMutableMap().also { gtList ->
+
+        equalities.forEach { (z1, z2) ->
+            last(z1).forEach { zEnding ->
+                gtList.getOrPut(zEnding) { mutableSetOf() }
+                        .apply {
+                            add(z2)
+                            addAll(first(z2).filter { it is Terminal })
+                        }
             }
+        }
+        last(grammar.axiom).forEach { gtList.getOrPut(it) { mutableSetOf() }.add(EndOfLine()) }
+    }
 
     fun first(symbol: Symbol<String>) = first[symbol] ?: mutableSetOf()
     fun last(symbol: Symbol<String>) = last[symbol] ?: mutableSetOf()
@@ -46,39 +83,43 @@ class PrecursorTable(private val grammar: LLGrammar) {
             (pair.first in ltList) && (pair.second in ltList[pair.first]!!)
 
     private fun isGt(pair: Pair<Symbol<String>, Symbol<String>>): Boolean =
-            (pair.second is Terminal) && (pair.first in gtList) && (pair.second in gtList[pair.first]!!)
+            (pair.first in gtList) && (pair.second in gtList[pair.first]!!)
 
     private val table = grammar.items
             .let { (it + listOf(StartOfLine())) * (it + listOf(EndOfLine())) }
             .map { it to compare(it.first, it.second) }.toMap()
 
-    override fun toString(): String {
-        val rows = grammar.items.let { it + listOf(StartOfLine()) }
-        val cols = grammar.items.let { it + listOf(EndOfLine()) }
-        val sb = StringBuilder(" ${cols.joinToString(" ") { it.value }}\n")
-
-        for (r in rows) {
-            sb.append(r.value)
-            for (c in cols) {
-                sb.append(" " + table[r to c])
+    val tableType =
+            when {
+                table.values.map(Relation::toString).map(String::length).max()!! <= 1 -> PrecursiveGrammarType.STRONG
+                table.values.any { v -> v.toString().length > 1 && !v.le } -> PrecursiveGrammarType.NONE
+                else -> PrecursiveGrammarType.WEAK
             }
-            sb.append('\n')
-        }
-        return sb.toString()
+
+    override fun toString(): String {
+        return toString(
+                grammar.items.filter { it is NonTerminal }.map { it as NonTerminal },
+                grammar.items.filter { it is Terminal }.map { it as Terminal })
     }
 
     fun toString(alignNonTerminals: List<NonTerminal>, alignTerminals: List<Terminal>): String {
         val rows = alignNonTerminals + alignTerminals + listOf(StartOfLine())
         val cols = alignNonTerminals + alignTerminals + listOf(EndOfLine())
-        val sb = StringBuilder("  ${cols.joinToString(" ") { it.value }}\n")
 
-        for (r in rows) {
-            sb.append(r.value)
-            for (c in cols) {
-                sb.append(" " + table[r to c])
-            }
+        val head = listOf(" ") + rows.map { it.value }
+        val grid = mutableListOf(head)
+        val zrel = Relation(0, 0, 0)
+
+        grid.addAll(cols.map { listOf(it.value) + rows.map { h -> table.getOrDefault(h to it, zrel).toString() } })
+        val colLens = grid.map { it.map(String::length).max()!! }
+
+        val sb = StringBuilder()
+
+        for (j in 0 until grid.first().size) {
+            for ((i, len) in colLens.withIndex()) sb.append(grid[i][j].padEnd(len + 1))
             sb.append('\n')
         }
+
         return sb.toString()
     }
 }
@@ -110,17 +151,19 @@ fun main(args: Array<String>) {
         (listOf(nt) + ts).forEach {
             when (it) {
                 is NonTerminal -> nonTerminalsInAppearanceOrder.addIfNever(it)
-                is Terminal    -> terminalsInAppearanceOrder.addIfNever(it)
+                is Terminal -> terminalsInAppearanceOrder.addIfNever(it)
             }
         }
     }
 
-    // TODO: Sort output, algoritm itself
+    // TODO: algoritm itself
 
     val grammar = LLGrammar(forGrammar)
     val table = PrecursorTable(grammar)
 
-    println(table.toString(nonTerminalsInAppearanceOrder, terminalsInAppearanceOrder))
+    print(table.toString(nonTerminalsInAppearanceOrder, terminalsInAppearanceOrder))
+    println(table.tableType.name.first())
+    println()
 }
 
 private fun <E> MutableList<E>.addIfNever(it: E) {

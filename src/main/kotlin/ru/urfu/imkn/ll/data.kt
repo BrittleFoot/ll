@@ -40,3 +40,9 @@ fun asGrammarToken(c: Char): GrammarToken<String> {
     if (c.isLowerCase()) return Terminal(c.toString())
     throw IllegalArgumentException(c.toString())
 }
+
+enum class PrecursiveGrammarType {
+    STRONG,
+    WEAK,
+    NONE
+}
