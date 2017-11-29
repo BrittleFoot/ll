@@ -7,8 +7,7 @@ sealed class Symbol<T> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         other as Symbol<*>
-        if (value != other.value) return false
-        return true
+        return other.value == value
     }
 
     override fun hashCode(): Int {
@@ -22,13 +21,24 @@ sealed class Symbol<T> {
 
 }
 
+
+class Relation(val eq: Boolean, val lt: Boolean, val gt: Boolean) : Symbol<String>() {
+    constructor(a: Int, b: Int, c: Int) : this(a != 0, b != 0, c != 0)
+
+    val size = +lt + +gt + +eq
+    val ge = gt and eq
+    val le = lt and eq
+    val none = !(eq || lt || gt)
+    override fun toString() = ((lt `@` "<") + (gt `@` ">") + (eq `@` "=")) ifEmptyThen "."
+    override val value = toString()
+}
+
 sealed class GrammarToken<T> : Symbol<T>()
 
 class EndOfLine(override val value: String = "$") : Symbol<String>()
 class StartOfLine(override val value: String = "^") : Symbol<String>()
 
 open class Terminal(override val value: String) : GrammarToken<String>()
-class Empty : Terminal("λ")
 
 class NonTerminal(override val value: String) : GrammarToken<String>()
 

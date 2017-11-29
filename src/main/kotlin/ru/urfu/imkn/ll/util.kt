@@ -1,5 +1,7 @@
 package ru.urfu.imkn.ll
 
+import java.util.*
+
 
 operator fun <T, U> Iterable<T>.times(that: Iterable<U>) = this.flatMap { a -> that.map { b -> a to b } }
 
@@ -21,3 +23,22 @@ operator fun Boolean.unaryPlus() = when (this) {
 infix fun Boolean.`@`(s: String) = if (this) s else ""
 infix fun String.ifEmptyThen(s: String) = if (isNotEmpty()) this else s
 
+
+fun <T> Stack<T>.pop(n: Int) = (1..n).map { this.pop() }.reversed()
+fun <T> Stack<T>.popWhile(cond: (T) -> Boolean): List<T> {
+    val popped: MutableList<T> = mutableListOf()
+    while (cond(peek())) popped.add(pop())
+    return popped.reversed();
+}
+fun <T> Stack<T>.includedPopWhile(cond: (T) -> Boolean): List<T> {
+    val popped: MutableList<T> = mutableListOf()
+    while (cond(peek())) popped.add(pop())
+    popped.add(pop())
+    return popped.reversed();
+}
+fun <T> Stack<T>.includedPopWhileNot(cond: (T) -> Boolean): List<T> {
+    val popped: MutableList<T> = mutableListOf()
+    while (!cond(peek())) popped.add(pop())
+    popped.add(pop())
+    return popped.reversed()
+}
