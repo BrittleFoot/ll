@@ -24,10 +24,10 @@ class PrecursorTable(private val grammar: LLGrammar) {
 
         while (true) {
 
-            val nextGen = firstGen.flatMap {
+            val nextGen = firstGen + firstGen.flatMap {
                 when (it) {
                     is Terminal    -> listOf(it)
-                    is NonTerminal -> gen(grammar, sym, selector)
+                    is NonTerminal -> gen(grammar, it, selector)
                 }
             }.toSet()
 
@@ -157,6 +157,7 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
             }
 
             if (rel.gt) {
+                // TODO: find maximum available basis for weak gramatics
                 val dirtyBasis = stack.includedPopWhileNot { it is Relation && it.lt && !it.le }
                 if (stack.isEmpty())
                     break
@@ -232,10 +233,8 @@ fun main(args: Array<String>) {
     putln(table.tableType.name.first().toString())
     putln("")
 
-    if (table.tableType == PrecursiveGrammarType.NONE)
-        return
-
-    tests.map {grammar.parse(table, it) }.joinToString("\r\n\r\n").also(putln)
+    if (table.tableType != PrecursiveGrammarType.NONE)
+        tests.map {grammar.parse(table, it) }.joinToString("\r\n\r\n").also(putln)
 
     //print(output.joinToString(""))
     Files.write(File(outFname).toPath(), output.joinToString("").toByteArray())

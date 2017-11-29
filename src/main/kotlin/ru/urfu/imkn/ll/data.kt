@@ -47,8 +47,7 @@ typealias Rule = Array<GrammarToken<String>>
 
 fun asGrammarToken(c: Char): GrammarToken<String> {
     if (c.isUpperCase()) return NonTerminal(c.toString())
-    if (c.isLowerCase()) return Terminal(c.toString())
-    throw IllegalArgumentException(c.toString())
+    return Terminal(c.toString())
 }
 
 enum class PrecursiveGrammarType {
