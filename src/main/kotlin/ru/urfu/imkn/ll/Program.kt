@@ -1,7 +1,6 @@
 package ru.urfu.imkn.ll
 
 import java.io.File
-import java.io.FileOutputStream
 import java.nio.file.Files
 import java.util.*
 
@@ -134,6 +133,38 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
         return listOf(l.joinToString("") { it.value }, r.joinToString("") { it.value }).joinToString(" ")
     }
 
+    private fun ntByRule(rule: Rule) = this.rules
+            .mapValues { (_, v) -> v.filter { it.contentEquals(rule) } }
+            .filter { (_, v) -> v.isNotEmpty() }
+            .mapValues { it.value.first().asList() }
+
+    private fun getAvailableBaises(stack: Stack<Symbol<String>>)
+            : MutableMap<Int, Pair<NonTerminal, List<Symbol<String>>>> {
+        val maxBaises = mutableMapOf<Int, Pair<NonTerminal, List<Symbol<String>>>>()
+        val baisesContainer = mutableListOf<Symbol<String>>()
+
+        for (it in stack.reversed()) {
+
+            baisesContainer.add(it)
+
+            if (it is Relation && it.lt) {
+                val basisCondidate = baisesContainer.reversed()
+                val ntByRule = ntByRule(basisCondidate
+                        .filter { it is GrammarToken<String> }
+                        .map { it as GrammarToken<String> }
+                        .toTypedArray())
+
+                if (ntByRule.isNotEmpty()) {
+                    val (nonTerminal, _) = ntByRule.entries.first()
+                    maxBaises[basisCondidate.size] = nonTerminal to basisCondidate
+                }
+
+                if (!it.le) break
+            }
+        }
+        return maxBaises;
+    }
+
     fun parse(table: PrecursorTable, string: String): String {
         val stack = Stack<Symbol<String>>().apply { add(StartOfLine()) }
         val input = ArrayDeque<Symbol<String>>().apply {
@@ -142,9 +173,9 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
         }
 
         val output = mutableListOf<String>()
-        val println: (String) -> Unit = { s: String -> output.add(s) }
+        val putln: (String) -> Unit = { s: String -> output.add(s) }
 
-        repr(stack.filter { it !is Relation }, input).also(println)
+        repr(stack.filter { it !is Relation }, input).also(putln)
 
         while (input.isNotEmpty()) {
             val next = input.peek()
@@ -152,49 +183,45 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
 
             val rel = table[top, next]
             if (rel.none) {
-                println("error")
+                putln("error")
                 break
             }
 
             if (rel.gt) {
-                // TODO: find maximum available basis for weak gramatics
-                val dirtyBasis = stack.includedPopWhileNot { it is Relation && it.lt && !it.le }
-                if (stack.isEmpty())
-                    break
 
-                val basis = dirtyBasis.filter { it !is Relation }
-                if (basis.size == 1 && basis.first() == axiom) {
-                    stack.push(axiom)
-                    stack.push(input.poll())
-                    stack.filter { it !is Relation }.joinToString("") { it.value }.also(println)
+                val maxBaises = getAvailableBaises(stack)
+
+                if (maxBaises.isEmpty()) {
+                    if (input.peek() == EndOfLine() && stack.size == 3 && stack.peek() == axiom) {
+                        stack.push(input.poll())
+                        stack.filter { it !is Relation }.joinToString("") { it.value }.also(putln)
+                        break
+                    }
+                    putln("error: Cant find basis in $stack")
                     break
                 }
+                val (ruleLength, resultRule) = maxBaises.entries.maxBy { it.key }!!
 
-                val filtered = this.rules
-                        .mapValues { (_, v) -> v.filter { it.asList() == basis } }
-                        .filter { (_, v) -> v.isNotEmpty() }
-                        .mapValues { it.value.first().asList() }
-
-                if (filtered.isEmpty()) throw IllegalStateException("No such rule $basis")
-
-                val (nonTerminal, _) = filtered.entries.first()
+                stack.pop(ruleLength)
 
                 val ntop = stack.peek()
 
-                val relation = table[ntop, nonTerminal]
+                val relation = table[ntop, resultRule.first]
                 if (relation.none) {
-                    println("error")
+                    putln("error")
                     break
                 }
 
                 stack.push(relation)
-                stack.push(nonTerminal)
+                stack.push(resultRule.first)
+
             } else {
                 stack.push(rel)
                 stack.push(next)
                 input.poll()
             }
-            repr(stack.filter { it !is Relation }, input).also(println)
+            //println("$stack ${table[stack.peek(), input.peek()]} $input")
+            repr(stack.filter { it !is Relation }, input).also(putln)
         }
 
         return output.joinToString("\r\n")
@@ -234,7 +261,7 @@ fun main(args: Array<String>) {
     putln("")
 
     if (table.tableType != PrecursiveGrammarType.NONE)
-        tests.map {grammar.parse(table, it) }.joinToString("\r\n\r\n").also(putln)
+        tests.map { grammar.parse(table, it) }.joinToString("\r\n\r\n").also(putln)
 
     //print(output.joinToString(""))
     Files.write(File(outFname).toPath(), output.joinToString("").toByteArray())

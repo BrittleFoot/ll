@@ -1,26 +1,87 @@
-  S A  a b c d $
-S . .  . = . . .
-A = .  < . = < .
-a . <= . . < . .
-b . .  . > . . >
-c . .  > . > > .
-d . .  . > . . >
-^ . .  < . . < .
+  E  T  F + * ( ) x $ 
+E .  .  . = . . = . > 
+T .  .  . > = . > . > 
+F .  .  . > > . > . > 
++ .  <= < . . < . < . 
+* .  .  = . . < . < . 
+( <= <  < . . < . < . 
+) .  .  . > > . > . > 
+x .  .  . > > . > . > 
+^ <  <  < . . < . < . 
 W
 
-^ acdb$
-^a cdb$
-^ac db$
-^aA db$
-^aAd b$
-^aAS b$
-^aASb $
-^S $
-^S$
-
-^ acdc$
-^a cdc$
-^ac dc$
-^aA dc$
-^aAd c$
-error
+^ x+x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^x +x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^F +x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^T +x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E +x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+ x*x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+x *x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+F *x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+T *x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+T* x+(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+T*x +(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+T*F +(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+T +(x+x*x*(x+x*x+x))*x+(x*x)$
+^E +(x+x*x*(x+x*x+x))*x+(x*x)$
+^E+ (x+x*x*(x+x*x+x))*x+(x*x)$
+^E+( x+x*x*(x+x*x+x))*x+(x*x)$
+^E+(x +x*x*(x+x*x+x))*x+(x*x)$
+^E+(F +x*x*(x+x*x+x))*x+(x*x)$
+^E+(T +x*x*(x+x*x+x))*x+(x*x)$
+^E+(E +x*x*(x+x*x+x))*x+(x*x)$
+^E+(E+ x*x*(x+x*x+x))*x+(x*x)$
+^E+(E+x *x*(x+x*x+x))*x+(x*x)$
+^E+(E+F *x*(x+x*x+x))*x+(x*x)$
+^E+(E+T *x*(x+x*x+x))*x+(x*x)$
+^E+(E+T* x*(x+x*x+x))*x+(x*x)$
+^E+(E+T*x *(x+x*x+x))*x+(x*x)$
+^E+(E+T*F *(x+x*x+x))*x+(x*x)$
+^E+(E+T *(x+x*x+x))*x+(x*x)$
+^E+(E+T* (x+x*x+x))*x+(x*x)$
+^E+(E+T*( x+x*x+x))*x+(x*x)$
+^E+(E+T*(x +x*x+x))*x+(x*x)$
+^E+(E+T*(F +x*x+x))*x+(x*x)$
+^E+(E+T*(T +x*x+x))*x+(x*x)$
+^E+(E+T*(E +x*x+x))*x+(x*x)$
+^E+(E+T*(E+ x*x+x))*x+(x*x)$
+^E+(E+T*(E+x *x+x))*x+(x*x)$
+^E+(E+T*(E+F *x+x))*x+(x*x)$
+^E+(E+T*(E+T *x+x))*x+(x*x)$
+^E+(E+T*(E+T* x+x))*x+(x*x)$
+^E+(E+T*(E+T*x +x))*x+(x*x)$
+^E+(E+T*(E+T*F +x))*x+(x*x)$
+^E+(E+T*(E+T +x))*x+(x*x)$
+^E+(E+T*(E +x))*x+(x*x)$
+^E+(E+T*(E+ x))*x+(x*x)$
+^E+(E+T*(E+x ))*x+(x*x)$
+^E+(E+T*(E+F ))*x+(x*x)$
+^E+(E+T*(E+T ))*x+(x*x)$
+^E+(E+T*(E ))*x+(x*x)$
+^E+(E+T*(E) )*x+(x*x)$
+^E+(E+T*F )*x+(x*x)$
+^E+(E+T )*x+(x*x)$
+^E+(E )*x+(x*x)$
+^E+(E) *x+(x*x)$
+^E+F *x+(x*x)$
+^E+T *x+(x*x)$
+^E+T* x+(x*x)$
+^E+T*x +(x*x)$
+^E+T*F +(x*x)$
+^E+T +(x*x)$
+^E +(x*x)$
+^E+ (x*x)$
+^E+( x*x)$
+^E+(x *x)$
+^E+(F *x)$
+^E+(T *x)$
+^E+(T* x)$
+^E+(T*x )$
+^E+(T*F )$
+^E+(T )$
+^E+(E )$
+^E+(E) $
+^E+F $
+^E+T $
+^E $
+^E$

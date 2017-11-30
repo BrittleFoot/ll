@@ -1,7 +1,8 @@
-S aASb
-S d
-A Ac
-A c
+E E+T
+E T
+T T*F
+T F
+F (E)
+F x
 
-acdb
-acdc
+x+x*x+(x+x*x*(x+x*x+x))*x+(x*x)
