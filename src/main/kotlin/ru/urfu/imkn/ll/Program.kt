@@ -58,7 +58,7 @@ class PrecursorTable(private val grammar: LLGrammar) {
             last(z1).forEach { zEnding ->
                 gtList.getOrPut(zEnding) { mutableSetOf() }
                         .apply {
-                            add(z2)
+                            if (z2 is Terminal) add(z2)
                             addAll(first(z2).filter { it is Terminal })
                         }
             }
