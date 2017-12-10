@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import java.util.*
 
-class PrecursorTable(private val grammar: LLGrammar) {
+class PrecedenceTable(private val grammar: LLGrammar) {
     private val equalities = grammar.rules.flatMap { it.value }.flatMap { it.asIterable().bigrams() }.toSet()
     // FIXIT
     private val first = grammar.rules.mapValues {
@@ -67,8 +67,8 @@ class PrecursorTable(private val grammar: LLGrammar) {
         gtList[grammar.axiom]?.add(EndOfLine())
     }
 
-    fun first(symbol: Symbol<String>) = first[symbol] ?: mutableSetOf()
-    fun last(symbol: Symbol<String>) = last[symbol] ?: mutableSetOf()
+    private fun first(symbol: Symbol<String>) = first[symbol] ?: mutableSetOf()
+    private fun last(symbol: Symbol<String>) = last[symbol] ?: mutableSetOf()
 
     private fun cmp(a: Symbol<String>, b: Symbol<String>) = Relation((a to b) in equalities, isLt(a to b), isGt(a to b))
 
@@ -82,12 +82,30 @@ class PrecursorTable(private val grammar: LLGrammar) {
             .let { (it + listOf(StartOfLine())) * (it + listOf(EndOfLine())) }
             .map { it to cmp(it.first, it.second) }.toMap()
 
+    private val isGrammarWeak = table.values.all { v -> !((v.lt || v.eq) && v.gt) } && secondCond()
+
+    private val isGrammarSimple = table.values.map(Relation::toString).map(String::length).max()!! <= 1
+
     val tableType =
             when {
-                table.values.map(Relation::toString).map(String::length).max()!! <= 1 -> PrecursiveGrammarType.STRONG
-                table.values.any { v -> v.toString().length > 1 && !v.le }            -> PrecursiveGrammarType.NONE
-                else                                                                  -> PrecursiveGrammarType.WEAK
+                isGrammarSimple -> PrecedenceGrammarType.SIMPLE
+                isGrammarWeak   -> PrecedenceGrammarType.WEAK
+                else            -> PrecedenceGrammarType.NONE
             }
+
+    private fun secondCond(): Boolean {
+
+        return table.filter { (x, rel) -> (rel.lt || rel.eq) && x.second is NonTerminal }.entries.all { (pair, _) ->
+            val (x, B: NonTerminal) = pair.first to pair.second as NonTerminal
+            grammar[B].none { bRule ->
+                grammar
+                        .rules.entries
+                        .flatMap { it.value }
+                        .any { bRule.isSuffixOf(it) && it.size > bRule.size && it[it.size - bRule.size - 1] == x }
+            }
+        }
+    }
+
 
     operator fun get(a: Symbol<String>, b: Symbol<String>): Relation = table.getOrDefault(a to b, Relation(0, 0, 0))
 
@@ -119,6 +137,9 @@ class PrecursorTable(private val grammar: LLGrammar) {
     }
 }
 
+private fun <T> Array<T>.isSuffixOf(x: Array<T>) =
+        size <= x.size && (1..size).none { x[x.size - it] != this[size - it] }
+
 
 class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
     val rules: Map<NonTerminal, List<Rule>> = lRules.groupBy { it.first }.mapValues { it.value.map { it.second } }
@@ -127,9 +148,9 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
         set(value) = if (value in rules) field = value else
             throw IllegalArgumentException("$value not in rules = [$rules]")
 
-    operator fun get(nt: NonTerminal) = rules[nt]
+    operator fun get(nt: NonTerminal) = rules.getOrDefault(nt, arrayListOf())
 
-    fun repr(l: Collection<Symbol<String>>, r: Collection<Symbol<String>>): String {
+    private fun repr(l: Collection<Symbol<String>>, r: Collection<Symbol<String>>): String {
         return listOf(l.joinToString("") { it.value }, r.joinToString("") { it.value }).joinToString(" ")
     }
 
@@ -162,10 +183,10 @@ class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
                 if (!it.le) break
             }
         }
-        return maxBaises;
+        return maxBaises
     }
 
-    fun parse(table: PrecursorTable, string: String): String {
+    fun parse(table: PrecedenceTable, string: String): String {
         val stack = Stack<Symbol<String>>().apply { add(StartOfLine()) }
         val input = ArrayDeque<Symbol<String>>().apply {
             addAll(string.map { Terminal(it.toString()) })
@@ -254,16 +275,16 @@ fun main(args: Array<String>) {
     val putln: (String) -> Unit = { output.add("$it\r\n") }
 
     val grammar = LLGrammar(forGrammar)
-    val table = PrecursorTable(grammar)
+    val table = PrecedenceTable(grammar)
 
     put(table.toString(nonTerminalsInAppearanceOrder, terminalsInAppearanceOrder))
     putln(table.tableType.name.first().toString())
     putln("")
 
-    if (table.tableType != PrecursiveGrammarType.NONE)
-        tests.map { grammar.parse(table, it) }.joinToString("\r\n\r\n").also(putln)
+    if (table.tableType != PrecedenceGrammarType.NONE)
+        tests.joinToString("\r\n\r\n") { grammar.parse(table, it) }.also(putln)
 
-    //print(output.joinToString(""))
+//    print(output.joinToString(""))
     Files.write(File(outFname).toPath(), output.joinToString("").toByteArray())
 }
 

@@ -50,8 +50,8 @@ fun asGrammarToken(c: Char): GrammarToken<String> {
     return Terminal(c.toString())
 }
 
-enum class PrecursiveGrammarType {
-    STRONG,
+enum class PrecedenceGrammarType {
+    SIMPLE,
     WEAK,
     NONE
 }
