@@ -6,7 +6,7 @@ import java.util.*
 
 class PrecedenceTable(private val grammar: LLGrammar) {
     private val equalities = grammar.rules.flatMap { it.value }.flatMap { it.asIterable().bigrams() }.toSet()
-    // FIXIT
+
     private val first = grammar.rules.mapValues {
         deep(grammar, it.key) { it.first() }
     }
@@ -22,7 +22,6 @@ class PrecedenceTable(private val grammar: LLGrammar) {
         var firstGen = gen(grammar, sym, selector).toSet()
 
         while (true) {
-
             val nextGen = firstGen + firstGen.flatMap {
                 when (it) {
                     is Terminal    -> listOf(it)
@@ -142,9 +141,11 @@ private fun <T> Array<T>.isSuffixOf(x: Array<T>) =
 
 
 class LLGrammar(lRules: List<Pair<NonTerminal, Rule>>) {
-    val rules: Map<NonTerminal, List<Rule>> = lRules.groupBy { it.first }.mapValues { it.value.map { it.second } }
-    val items: List<GrammarToken<String>> = rules.values.flatMap { it }.flatMap { it.asList() }.distinct()
-    var axiom: NonTerminal = lRules.first().first
+    val rules = lRules.groupBy { it.first }.mapValues { it.value.map { it.second } }
+
+    val items = (rules.values.flatMap { it }.flatMap { it.asList() } + rules.keys).distinct()
+
+    var axiom = lRules.first().first
         set(value) = if (value in rules) field = value else
             throw IllegalArgumentException("$value not in rules = [$rules]")
 
@@ -269,6 +270,20 @@ fun main(args: Array<String>) {
             }
         }
     }
+
+    terminalsInAppearanceOrder.sortWith(kotlin.Comparator { a, b ->
+        val aSym = a.value[0]
+        val bSym = b.value[0]
+        when {
+            aSym.isDigit() && bSym.isDigit() -> aSym.compareTo(bSym)
+            aSym.isLetter() && bSym.isLetter() -> aSym.compareTo(bSym)
+            aSym.isDigit() && bSym.isLetter() -> 1
+            aSym.isLetter() && bSym.isDigit() -> -1
+            aSym.isLetter() -> -1
+            aSym.isDigit() -> -1
+            else -> aSym.compareTo(bSym)
+        }
+    })
 
     val output = mutableListOf<String>()
     val put: (String) -> Unit = { output.add(it) }
